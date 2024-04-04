@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+</head>
+<body>
+    <style >
+        #container{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        button{
+            padding: 8px;
+            width: 100px;
+            border: none;
+            background-color: dimgrey;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+        }
+
+    </style>
+    <div id="container">
+        <h1>To Do App</h1>
+        <h3 >Don't have Account Register now!</h3>
+        <form action='/register' method="GET">
+            <button> Register </button>
+        </form>
+
+        <h3>Already have account</h3>
+        <form action='/login' method="GET">
+            <button> LogIn </button>
+        </form>
+    </div>
+</body>
+</html>
