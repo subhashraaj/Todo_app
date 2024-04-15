@@ -5,10 +5,11 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const session = require("express-session");
 const mongoDbSession = require("connect-mongodb-session")(session)
+const jwt = require("jsonwebtoken");
 
 
 //file-import
-const { userDataValidation, isEmailRegex }  = require("./utils/authUtils");
+const { userDataValidation, isEmailRegex, generateToken, sendVerificationMail }  = require("./utils/authUtils");
 const { todoDataValidation } = require("./utils/todoUtils")
 const userModel = require("./models/userModel");
 const { isAuth } = require("./middlewares/authMiddleWare");
@@ -97,7 +98,19 @@ app.post("/register", async(req,res) => {
     }
     try{
         const userDb = await userObj.save();
-        return res.redirect("/login")
+
+        //generateToken
+        const verifiedToken = generateToken(email);
+        //console.log(verifiedToken)
+
+        //send mail
+        sendVerificationMail(email, verifiedToken);
+        return res.send({
+            stauts: 200,
+            message: "Verification Email sent Sucessfully"
+        })
+
+
     }catch(err){
         return res.send({
             status: 500,
@@ -136,9 +149,10 @@ app.post("/login", async (req,res) => {
         if(!userDb){
             return res.render("userNotFound")
         }
-        //console.log(password===userDb.password)   
-
-        //Compare password using Bcrypt
+        //console.log(userDb)
+        if(!userDb.isEmailVerified){
+            return res.status(200).json("Please Verify your email before Login")
+        }
 
         const isMatch = await bcrypt.compare(password, userDb.password)
         if(!isMatch) return res.status(400).json("Password Does not match")
@@ -263,7 +277,7 @@ app.get("/read-item", isAuth, async(req, res) => {
             }
         ]) 
 
-        console.log(todoDb[0].data);
+        //console.log(todoDb[0].data);
         if(todoDb[0].data.length === 0){
             return res.send({
                 status: 400,
@@ -307,7 +321,7 @@ app.post("/edit-item", isAuth, async(req, res) => {
 
     try {
         const todoDb = await todoModel.findById({ _id : todoId})
-        console.log(todoDb)
+        //console.log(todoDb)
 
         if (!todoDb)
         return res.send({
@@ -387,6 +401,31 @@ app.post("/delete-item", isAuth, async(req, res) => {
 
 
     
+})
+
+app.get("/verifytoken/:token", async(req, res) => {
+    console.log(req.params.token)
+    const token = req.params.token;
+    const userEmail = jwt.verify(token, process.env.SECRET_KEY)
+    console.log(userEmail)
+
+    try{
+        await userModel.findOneAndUpdate({ email: userEmail}, { isEmailVerified: true })
+        return res.redirect("/login")
+    }
+    catch(error){
+        return res.send({
+            status: 500,
+            message: "internal Server Error",
+            error: error,
+        })
+    }
+
+    return res.send({
+        status: 200, 
+        message: "Email Verified Sucessfully",
+    })
+
 })
 
 
